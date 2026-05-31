@@ -3,6 +3,13 @@ const SUPABASE_KEY = 'sb_publishable_6UpcVYvLB47tS9G7aMZNFA_v0Pxmn9g';
 
 const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// ===== AUTH =====
+async function verifyPin(pin) {
+  const { data, error } = await sbClient.rpc('verify_pin', { input_pin: pin });
+  if (error) throw error;
+  return data === true;
+}
+
 // ===== DATABASE OPERATIONS =====
 
 const db = {

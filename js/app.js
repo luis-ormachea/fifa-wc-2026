@@ -56,18 +56,7 @@ const ALBUM = {
 const TOTAL_ALBUM = 980;
 
 // ===== AUTH =====
-const ADMIN_HASH = '5f4d8c3a9b2e1f7a6d0c4b8e3f2a1d5c';
 let isAdmin = false;
-
-function hashPin(pin) {
-  let hash = 0;
-  for (let i = 0; i < pin.length; i++) {
-    const char = pin.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
-  }
-  return Math.abs(hash).toString(16);
-}
 
 
 function restoreSession() {
@@ -255,17 +244,22 @@ function navigate(page) {
   if (page === 'trade') renderTrade();
 }
 
-function tryAuthenticate() {
+async function tryAuthenticate() {
   const pin = prompt('Ingresa la contraseña:');
   if (!pin) return;
-  if (pin === '_f1f4wc2026!') {
-    isAdmin = true;
-    sessionStorage.setItem('wc2026_admin', '1');
-    const activePage = document.querySelector('.page.active');
-    if (activePage.id === 'page-missing') renderMissing();
-    if (activePage.id === 'page-repeats') renderRepeats();
-  } else {
-    alert('Contraseña incorrecta 🙅');
+  try {
+    const valid = await verifyPin(pin);
+    if (valid) {
+      isAdmin = true;
+      sessionStorage.setItem('wc2026_admin', '1');
+      const activePage = document.querySelector('.page.active');
+      if (activePage.id === 'page-missing') renderMissing();
+      if (activePage.id === 'page-repeats') renderRepeats();
+    } else {
+      alert('Contraseña incorrecta 🙅');
+    }
+  } catch (e) {
+    alert('Error de conexión. Intenta de nuevo.');
   }
 }
 
