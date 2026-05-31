@@ -69,18 +69,6 @@ function hashPin(pin) {
   return Math.abs(hash).toString(16);
 }
 
-function checkAdmin() {
-  if (isAdmin) return true;
-  const pin = prompt('Ingresa tu contraseña de administrador:');
-  if (!pin) return false;
-  if (pin === '_f1f4wc2026!') {
-    isAdmin = true;
-    sessionStorage.setItem('wc2026_admin', '1');
-    return true;
-  }
-  alert('Contraseña incorrecta');
-  return false;
-}
 
 function restoreSession() {
   isAdmin = sessionStorage.getItem('wc2026_admin') === '1';
@@ -256,10 +244,6 @@ function getRepeatsByPrefix() {
 
 // ===== NAVIGATION =====
 function navigate(page) {
-  if ((page === 'missing' || page === 'repeats') && !checkAdmin()) {
-    return;
-  }
-
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById(`page-${page}`).classList.add('active');
@@ -269,6 +253,20 @@ function navigate(page) {
   if (page === 'missing') renderMissing();
   if (page === 'repeats') renderRepeats();
   if (page === 'trade') renderTrade();
+}
+
+function tryAuthenticate() {
+  const pin = prompt('Ingresa la contraseña:');
+  if (!pin) return;
+  if (pin === '_f1f4wc2026!') {
+    isAdmin = true;
+    sessionStorage.setItem('wc2026_admin', '1');
+    const activePage = document.querySelector('.page.active');
+    if (activePage.id === 'page-missing') renderMissing();
+    if (activePage.id === 'page-repeats') renderRepeats();
+  } else {
+    alert('Contraseña incorrecta 🙅');
+  }
 }
 
 // ===== RENDER: DASHBOARD =====
@@ -400,12 +398,7 @@ function renderMissing() {
   const missingByPrefix = getMissingByPrefix();
   const prefixes = Object.keys(missingByPrefix).sort();
 
-  document.getElementById('page-missing').innerHTML = `
-    <div class="section-header">
-      <span class="section-title">Mis Faltantes</span>
-      <span class="label-bold" style="color: var(--error)">${state.missing.length} total</span>
-    </div>
-
+  const adminForm = isAdmin ? `
     <div class="input-form">
       <div class="form-row">
         <div class="form-field prefix-field">
@@ -423,6 +416,23 @@ function renderMissing() {
       </button>
       <div id="missing-feedback" class="feedback"></div>
     </div>
+  ` : `
+    <div class="auth-prompt">
+      <p class="auth-prompt-text">Oye, esto es solo para mí. Si quieres intercambiar figuritas, ve a <a onclick="navigate('trade')">Intercambios</a>.</p>
+      <button class="btn-secondary btn-full" onclick="tryAuthenticate()">
+        <span class="material-symbols-outlined" style="font-size:18px">lock</span>
+        Autenticarme
+      </button>
+    </div>
+  `;
+
+  document.getElementById('page-missing').innerHTML = `
+    <div class="section-header">
+      <span class="section-title">Mis Faltantes</span>
+      <span class="label-bold" style="color: var(--error)">${state.missing.length} total</span>
+    </div>
+
+    ${adminForm}
 
     <datalist id="prefix-list">
       ${Object.entries(ALBUM).map(([code, info]) => `<option value="${code}">${info.name}</option>`).join('')}
@@ -440,15 +450,15 @@ function renderMissing() {
                 <span style="font-size:20px">${info.flag}</span>
                 <span class="country-group-name">${info.name} (${prefix})</span>
                 <span class="country-group-count">${codes.length}/${info.max}</span>
-                <button class="btn-icon" onclick="handleClearMissing('${prefix}')" title="Eliminar todas de ${prefix}">
+                ${isAdmin ? `<button class="btn-icon" onclick="handleClearMissing('${prefix}')" title="Eliminar todas de ${prefix}">
                   <span class="material-symbols-outlined" style="font-size:16px">delete</span>
-                </button>
+                </button>` : ''}
               </div>
               <div class="sticker-tags">
                 ${numbers.sort((a, b) => a - b).map(n => `
                   <span class="sticker-tag">
                     ${prefix} ${n}
-                    <button class="tag-remove" onclick="handleRemoveMissing('${prefix} ${n}')">×</button>
+                    ${isAdmin ? `<button class="tag-remove" onclick="handleRemoveMissing('${prefix} ${n}')">×</button>` : ''}
                   </span>
                 `).join('')}
               </div>
@@ -460,7 +470,6 @@ function renderMissing() {
       <div class="empty-state">
         <span class="material-symbols-outlined">check_circle</span>
         <p>No tienes figuritas registradas como faltantes.</p>
-        <p class="body-md" style="color:var(--on-surface-variant)">Usa el formulario de arriba para agregar las que te faltan.</p>
       </div>
     `}
   `;
@@ -524,12 +533,7 @@ function renderRepeats() {
   const prefixes = Object.keys(repeatsByPrefix).sort();
   const totalRepeats = Object.values(state.repeats).reduce((s, v) => s + v, 0);
 
-  document.getElementById('page-repeats').innerHTML = `
-    <div class="section-header">
-      <span class="section-title">Mis Repetidas</span>
-      <span class="label-bold" style="color: var(--gold)">${totalRepeats} total</span>
-    </div>
-
+  const adminForm = isAdmin ? `
     <div class="input-form">
       <div class="form-row">
         <div class="form-field prefix-field">
@@ -547,6 +551,23 @@ function renderRepeats() {
       </button>
       <div id="repeats-feedback" class="feedback"></div>
     </div>
+  ` : `
+    <div class="auth-prompt">
+      <p class="auth-prompt-text">Oye, esto es solo para mí. Si quieres intercambiar figuritas, ve a <a onclick="navigate('trade')">Intercambios</a>.</p>
+      <button class="btn-secondary btn-full" onclick="tryAuthenticate()">
+        <span class="material-symbols-outlined" style="font-size:18px">lock</span>
+        Autenticarme
+      </button>
+    </div>
+  `;
+
+  document.getElementById('page-repeats').innerHTML = `
+    <div class="section-header">
+      <span class="section-title">Mis Repetidas</span>
+      <span class="label-bold" style="color: var(--gold)">${totalRepeats} total</span>
+    </div>
+
+    ${adminForm}
 
     <datalist id="prefix-list-r">
       ${Object.entries(ALBUM).map(([code, info]) => `<option value="${code}">${info.name}</option>`).join('')}
@@ -570,16 +591,16 @@ function renderRepeats() {
                 <span style="font-size:20px">${info.flag}</span>
                 <span class="country-group-name">${info.name} (${prefix})</span>
                 <span class="country-group-count">${items.length} figuritas</span>
-                <button class="btn-icon" onclick="handleClearRepeats('${prefix}')" title="Eliminar todas de ${prefix}">
+                ${isAdmin ? `<button class="btn-icon" onclick="handleClearRepeats('${prefix}')" title="Eliminar todas de ${prefix}">
                   <span class="material-symbols-outlined" style="font-size:16px">delete</span>
-                </button>
+                </button>` : ''}
               </div>
               <div class="sticker-tags">
                 ${items.sort((a, b) => parseInt(a.code.split(' ')[1]) - parseInt(b.code.split(' ')[1])).map(item => `
                   <span class="sticker-tag repeat-tag">
                     ${item.code}
                     ${item.count > 1 ? `<span class="tag-count">x${item.count}</span>` : ''}
-                    <button class="tag-remove" onclick="handleRemoveRepeat('${item.code}')">−</button>
+                    ${isAdmin ? `<button class="tag-remove" onclick="handleRemoveRepeat('${item.code}')">−</button>` : ''}
                   </span>
                 `).join('')}
               </div>
@@ -591,7 +612,6 @@ function renderRepeats() {
       <div class="empty-state">
         <span class="material-symbols-outlined">content_copy</span>
         <p>No tienes figuritas repetidas registradas.</p>
-        <p class="body-md" style="color:var(--on-surface-variant)">Agrega las que tengas de más para ofrecerlas en intercambio.</p>
       </div>
     `}
   `;

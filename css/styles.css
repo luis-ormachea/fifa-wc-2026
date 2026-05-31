@@ -1263,6 +1263,30 @@ body {
   word-break: break-all;
 }
 
+/* ===== AUTH PROMPT ===== */
+.auth-prompt {
+  background: var(--surface-container-lowest);
+  border-radius: var(--rounded-lg);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-card);
+  margin-bottom: var(--spacing-lg);
+  text-align: center;
+}
+
+.auth-prompt-text {
+  font-size: 14px;
+  color: var(--on-surface-variant);
+  margin-bottom: var(--spacing-md);
+  line-height: 20px;
+}
+
+.auth-prompt-text a {
+  color: var(--primary-container);
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
 /* ===== EMPTY STATE ===== */
 .empty-state {
   text-align: center;
