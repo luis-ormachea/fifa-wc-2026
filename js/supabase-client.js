@@ -1,14 +1,14 @@
 const SUPABASE_URL = 'https://zswwwnufyvrliwpdfqae.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_6UpcVYvLB47tS9G7aMZNFA_v0Pxmn9g';
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ===== DATABASE OPERATIONS =====
 
 const db = {
   // --- MISSING ---
   async getMissing() {
-    const { data, error } = await supabase
+    const { data, error } = await sbClient
       .from('missing')
       .select('code')
       .order('code');
@@ -18,7 +18,7 @@ const db = {
 
   async addMissing(codes) {
     const rows = codes.map(code => ({ code }));
-    const { data, error } = await supabase
+    const { data, error } = await sbClient
       .from('missing')
       .upsert(rows, { onConflict: 'code', ignoreDuplicates: true });
     if (error) throw error;
@@ -26,7 +26,7 @@ const db = {
   },
 
   async removeMissing(code) {
-    const { error } = await supabase
+    const { error } = await sbClient
       .from('missing')
       .delete()
       .eq('code', code);
@@ -34,7 +34,7 @@ const db = {
   },
 
   async clearMissingByPrefix(prefix) {
-    const { error } = await supabase
+    const { error } = await sbClient
       .from('missing')
       .delete()
       .like('code', `${prefix} %`);
@@ -43,7 +43,7 @@ const db = {
 
   // --- REPEATS ---
   async getRepeats() {
-    const { data, error } = await supabase
+    const { data, error } = await sbClient
       .from('repeats')
       .select('code, quantity')
       .order('code');
@@ -57,19 +57,19 @@ const db = {
 
   async addRepeats(codes) {
     for (const code of codes) {
-      const { data: existing } = await supabase
+      const { data: existing } = await sbClient
         .from('repeats')
         .select('quantity')
         .eq('code', code)
         .single();
 
       if (existing) {
-        await supabase
+        await sbClient
           .from('repeats')
           .update({ quantity: existing.quantity + 1 })
           .eq('code', code);
       } else {
-        await supabase
+        await sbClient
           .from('repeats')
           .insert({ code, quantity: 1 });
       }
@@ -77,19 +77,19 @@ const db = {
   },
 
   async removeRepeat(code) {
-    const { data: existing } = await supabase
+    const { data: existing } = await sbClient
       .from('repeats')
       .select('quantity')
       .eq('code', code)
       .single();
 
     if (existing && existing.quantity > 1) {
-      await supabase
+      await sbClient
         .from('repeats')
         .update({ quantity: existing.quantity - 1 })
         .eq('code', code);
     } else {
-      await supabase
+      await sbClient
         .from('repeats')
         .delete()
         .eq('code', code);
@@ -97,7 +97,7 @@ const db = {
   },
 
   async clearRepeatsByPrefix(prefix) {
-    const { error } = await supabase
+    const { error } = await sbClient
       .from('repeats')
       .delete()
       .like('code', `${prefix} %`);
