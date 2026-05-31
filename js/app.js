@@ -1,7 +1,8 @@
 // ===== ALBUM DATA =====
 const ALBUM = {
-  FWC: { name: "FIFA World Cup", flag: "🏆", max: 9 },
+  FWC: { name: "FIFA World Cup", flag: "🏆", max: 29 },
   MUS: { name: "Museo FIFA", flag: "🏛️", max: 11 },
+  CC: { name: "Coca-Cola", flag: "🥤", max: 14 },
   CZE: { name: "República Checa", flag: "🇨🇿", max: 20, group: "A" },
   MEX: { name: "México", flag: "🇲🇽", max: 20, group: "A" },
   RSA: { name: "Sudáfrica", flag: "🇿🇦", max: 20, group: "A" },
