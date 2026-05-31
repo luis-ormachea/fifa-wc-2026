@@ -650,7 +650,10 @@ async function handleClearRepeats(prefix) {
 }
 
 // ===== RENDER: TRADE =====
-function renderTrade() {
+async function renderTrade() {
+  try {
+    state.repeats = await db.getRepeats();
+  } catch (e) {}
   const totalRepeats = Object.values(state.repeats).reduce((s, v) => s + v, 0);
 
   document.getElementById('page-trade').innerHTML = `
