@@ -56,23 +56,33 @@ const db = {
   },
 
   async addRepeats(codes) {
-    for (const code of codes) {
-      const { data: existing } = await sbClient
-        .from('repeats')
-        .select('quantity')
-        .eq('code', code)
-        .single();
+    const { data: existing } = await sbClient
+      .from('repeats')
+      .select('code, quantity')
+      .in('code', codes);
 
-      if (existing) {
-        await sbClient
-          .from('repeats')
-          .update({ quantity: existing.quantity + 1 })
-          .eq('code', code);
+    const existingMap = {};
+    for (const row of (existing || [])) {
+      existingMap[row.code] = row.quantity;
+    }
+
+    const toInsert = [];
+    const toUpdate = [];
+    for (const code of codes) {
+      if (existingMap[code]) {
+        existingMap[code]++;
+        toUpdate.push({ code, quantity: existingMap[code] });
       } else {
-        await sbClient
-          .from('repeats')
-          .insert({ code, quantity: 1 });
+        existingMap[code] = 1;
+        toInsert.push({ code, quantity: 1 });
       }
+    }
+
+    if (toInsert.length > 0) {
+      await sbClient.from('repeats').insert(toInsert);
+    }
+    for (const item of toUpdate) {
+      await sbClient.from('repeats').update({ quantity: item.quantity }).eq('code', item.code);
     }
   },
 
@@ -81,7 +91,7 @@ const db = {
       .from('repeats')
       .select('quantity')
       .eq('code', code)
-      .single();
+      .maybeSingle();
 
     if (existing && existing.quantity > 1) {
       await sbClient
