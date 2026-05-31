@@ -697,6 +697,32 @@ async function renderTrade() {
       <div id="trade-matches"></div>
       <div id="trade-my-missing"></div>
     </div>
+
+    ${totalRepeats > 0 ? `
+      <div class="trade-inventory-summary">
+        <div class="trade-inventory-header">
+          <span class="material-symbols-outlined">inventory_2</span>
+          <span>Mis repetidas disponibles</span>
+        </div>
+        <div class="trade-inventory-list">
+          ${(() => {
+            const byPrefix = {};
+            for (const [code, qty] of Object.entries(state.repeats)) {
+              const [prefix] = code.split(' ');
+              if (!byPrefix[prefix]) byPrefix[prefix] = [];
+              byPrefix[prefix].push({ code, qty });
+            }
+            return Object.entries(byPrefix).sort((a, b) => a[0].localeCompare(b[0])).map(([prefix, items]) => {
+              const info = ALBUM[prefix];
+              const nums = items.sort((a, b) => parseInt(a.code.split(' ')[1]) - parseInt(b.code.split(' ')[1]))
+                .map(i => i.qty > 1 ? i.code.split(' ')[1] + '(x' + i.qty + ')' : i.code.split(' ')[1])
+                .join(', ');
+              return '<div class="sticker-group-inline"><span class="inline-prefix">' + info.flag + ' ' + prefix + ':</span><span class="inline-numbers">' + nums + '</span></div>';
+            }).join('');
+          })()}
+        </div>
+      </div>
+    ` : ''}
   `;
 }
 
