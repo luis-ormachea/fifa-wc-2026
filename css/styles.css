@@ -1097,36 +1097,88 @@ body {
   text-align: center;
 }
 
-/* Trade Inventory Summary */
-.trade-inventory-summary {
+/* Trade Step Indicator */
+.trade-step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-sm) 0;
+}
+
+.step-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: var(--rounded-full);
+  background: var(--outline-variant);
+  transition: background 0.3s;
+}
+
+.step-dot.active {
+  background: var(--primary-container);
+  box-shadow: 0 0 0 3px rgba(0, 31, 91, 0.2);
+}
+
+.step-dot.done {
+  background: var(--success);
+}
+
+.step-line {
+  width: 40px;
+  height: 2px;
+  background: var(--outline-variant);
+  transition: background 0.3s;
+}
+
+.step-line.done {
+  background: var(--success);
+}
+
+/* WhatsApp Button */
+.btn-whatsapp {
+  background: #25d366;
+  color: #ffffff;
+  margin-top: var(--spacing-md);
+}
+
+.btn-whatsapp:hover {
+  opacity: 0.9;
+}
+
+/* Trade Summary Final */
+.trade-summary-final {
   background: var(--surface-container-lowest);
   border-radius: var(--rounded-lg);
   padding: var(--spacing-md);
   box-shadow: var(--shadow-card);
-  margin-top: var(--spacing-lg);
-}
-
-.trade-inventory-header {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  font-family: var(--font-display);
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--gold);
-  margin-bottom: var(--spacing-sm);
-  padding-bottom: var(--spacing-sm);
-  border-bottom: 1px solid var(--outline-variant);
-}
-
-.trade-inventory-header .material-symbols-outlined {
-  font-size: 18px;
-}
-
-.trade-inventory-list {
+  margin-top: var(--spacing-md);
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--spacing-md);
+}
+
+.trade-summary-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.trade-summary-label {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--on-surface-variant);
+  text-transform: uppercase;
+}
+
+/* Trade My Missing Reference */
+.trade-my-missing-ref {
+  background: var(--surface-container-lowest);
+  border-radius: var(--rounded-lg);
+  padding: var(--spacing-md);
+  box-shadow: var(--shadow-card);
+  margin-top: var(--spacing-md);
 }
 
 /* ===== TRADE RESULTS ===== */

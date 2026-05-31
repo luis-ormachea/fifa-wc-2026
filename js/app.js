@@ -650,11 +650,20 @@ async function handleClearRepeats(prefix) {
 }
 
 // ===== RENDER: TRADE =====
+let visitorNeeds = [];
+let visitorOffers = [];
+let tradeStep = 1;
+
 async function renderTrade() {
   try {
     state.repeats = await db.getRepeats();
+    state.missing = await db.getMissing();
   } catch (e) {}
   const totalRepeats = Object.values(state.repeats).reduce((s, v) => s + v, 0);
+
+  visitorNeeds = [];
+  visitorOffers = [];
+  tradeStep = 1;
 
   document.getElementById('page-trade').innerHTML = `
     <div class="trade-hero">
@@ -664,10 +673,45 @@ async function renderTrade() {
       ${totalRepeats > 0 ? `<span class="trade-hero-badge">${totalRepeats} figuritas disponibles</span>` : ''}
     </div>
 
+    <div id="trade-step-container"></div>
+
+    <datalist id="prefix-list-t">
+      ${Object.entries(ALBUM).map(([code, info]) => `<option value="${code}">${info.name}</option>`).join('')}
+    </datalist>
+  `;
+
+  renderTradeStep();
+}
+
+function renderTradeStep() {
+  const container = document.getElementById('trade-step-container');
+
+  if (tradeStep === 1) {
+    renderTradeStep1(container);
+  } else if (tradeStep === 2) {
+    renderTradeStep2(container);
+  } else if (tradeStep === 3) {
+    renderTradeStep3(container);
+  }
+}
+
+// PASO 1: Visitante ingresa lo que le falta
+function renderTradeStep1(container) {
+  const matches = visitorNeeds.filter(code => state.repeats[code]);
+
+  container.innerHTML = `
+    <div class="trade-step-indicator">
+      <span class="step-dot active"></span>
+      <span class="step-line"></span>
+      <span class="step-dot"></span>
+      <span class="step-line"></span>
+      <span class="step-dot"></span>
+    </div>
+
     <div class="input-form trade-form-highlight">
       <div class="trade-form-label">
         <span class="material-symbols-outlined">edit_note</span>
-        <span>Escribí las figuritas que necesitás</span>
+        <span>Paso 1: ¿Qué figuritas te faltan?</span>
       </div>
       <div class="form-row">
         <div class="form-field prefix-field">
@@ -680,198 +724,316 @@ async function renderTrade() {
         </div>
       </div>
       <button class="btn-primary btn-full" onclick="handleAddTradeSearch()">
-        <span class="material-symbols-outlined" style="font-size:18px">search</span>
-        Buscar Coincidencias
+        <span class="material-symbols-outlined" style="font-size:18px">add</span>
+        Agregar
       </button>
       <p class="trade-form-hint">Podés agregar varios países, uno a la vez.</p>
       <div id="trade-feedback" class="feedback"></div>
     </div>
 
-    <datalist id="prefix-list-t">
-      ${Object.entries(ALBUM).map(([code, info]) => `<option value="${code}">${info.name}</option>`).join('')}
-    </datalist>
-
-    <div id="trade-visitor-list"></div>
-
-    <div id="trade-results" style="display:none">
-      <div id="trade-matches"></div>
-      <div id="trade-my-missing"></div>
-    </div>
-
-    ${totalRepeats > 0 ? `
-      <div class="trade-inventory-summary">
-        <div class="trade-inventory-header">
-          <span class="material-symbols-outlined">inventory_2</span>
-          <span>Mis repetidas disponibles</span>
-        </div>
-        <div class="trade-inventory-list">
-          ${(() => {
-            const byPrefix = {};
-            for (const [code, qty] of Object.entries(state.repeats)) {
-              const [prefix] = code.split(' ');
-              if (!byPrefix[prefix]) byPrefix[prefix] = [];
-              byPrefix[prefix].push({ code, qty });
-            }
-            return Object.entries(byPrefix).sort((a, b) => a[0].localeCompare(b[0])).map(([prefix, items]) => {
-              const info = ALBUM[prefix];
-              const nums = items.sort((a, b) => parseInt(a.code.split(' ')[1]) - parseInt(b.code.split(' ')[1]))
-                .map(i => i.qty > 1 ? i.code.split(' ')[1] + '(x' + i.qty + ')' : i.code.split(' ')[1])
-                .join(', ');
-              return '<div class="sticker-group-inline"><span class="inline-prefix">' + info.flag + ' ' + prefix + ':</span><span class="inline-numbers">' + nums + '</span></div>';
-            }).join('');
-          })()}
-        </div>
+    ${visitorNeeds.length > 0 ? `
+      <div class="trade-section-header">
+        <span class="section-title" style="font-size:14px">Buscando (${visitorNeeds.length})</span>
+        <button class="view-all" onclick="clearVisitorNeeds()" style="color:var(--error)">Limpiar</button>
       </div>
+      <div class="sticker-tags" style="margin-bottom: var(--spacing-md)">
+        ${visitorNeeds.map(code => `
+          <span class="sticker-tag visitor-tag">
+            ${code}
+            <button class="tag-remove" onclick="removeVisitorNeed('${code}')">×</button>
+          </span>
+        `).join('')}
+      </div>
+
+      ${matches.length > 0 ? `
+        <div class="trade-result-section available">
+          <div class="trade-result-header">
+            <span class="material-symbols-outlined">check_circle</span>
+            <span>¡Tengo ${matches.length} que necesitás!</span>
+          </div>
+          <div class="sticker-tags">
+            ${matches.map(code => `
+              <span class="sticker-tag match-tag">${code}</span>
+            `).join('')}
+          </div>
+        </div>
+        <button class="btn-primary btn-full" onclick="goToStep2()" style="margin-top: var(--spacing-md)">
+          <span class="material-symbols-outlined" style="font-size:18px">arrow_forward</span>
+          Continuar al intercambio
+        </button>
+      ` : `
+        <div class="trade-result-section no-match">
+          <div class="trade-result-header">
+            <span class="material-symbols-outlined">cancel</span>
+            <span>No tengo ninguna de las que buscás</span>
+          </div>
+        </div>
+      `}
     ` : ''}
   `;
 }
 
-let visitorNeeds = [];
+// PASO 2: Visitante ofrece figuritas a cambio (1:1)
+function renderTradeStep2(container) {
+  const matches = visitorNeeds.filter(code => state.repeats[code]);
+  const required = matches.length;
+  const remaining = required - visitorOffers.length;
 
+  container.innerHTML = `
+    <div class="trade-step-indicator">
+      <span class="step-dot done"></span>
+      <span class="step-line done"></span>
+      <span class="step-dot active"></span>
+      <span class="step-line"></span>
+      <span class="step-dot"></span>
+    </div>
+
+    <div class="trade-result-section available" style="margin-bottom: var(--spacing-md)">
+      <div class="trade-result-header">
+        <span class="material-symbols-outlined">check_circle</span>
+        <span>Te puedo dar (${matches.length}):</span>
+      </div>
+      <div class="sticker-tags">
+        ${matches.map(code => `<span class="sticker-tag match-tag">${code}</span>`).join('')}
+      </div>
+    </div>
+
+    <div class="input-form trade-form-highlight">
+      <div class="trade-form-label">
+        <span class="material-symbols-outlined">handshake</span>
+        <span>Paso 2: ¿Qué me ofrecés a cambio?</span>
+      </div>
+      <p class="section-subtitle">El intercambio es 1:1. Necesito que me ofrezcas <strong>${required}</strong> figurita${required !== 1 ? 's' : ''} de las que me faltan.</p>
+      <div class="form-row">
+        <div class="form-field prefix-field">
+          <label>País</label>
+          <input type="text" id="offer-prefix" placeholder="ARG" maxlength="3" autocomplete="off" list="prefix-list-t">
+        </div>
+        <div class="form-field numbers-field">
+          <label>Números que me ofrecés</label>
+          <input type="text" id="offer-numbers" placeholder="2,8,14" autocomplete="off">
+        </div>
+      </div>
+      <button class="btn-primary btn-full" onclick="handleAddOffer()">
+        <span class="material-symbols-outlined" style="font-size:18px">add</span>
+        Agregar Oferta
+      </button>
+      <div id="offer-feedback" class="feedback"></div>
+    </div>
+
+    ${visitorOffers.length > 0 ? `
+      <div class="trade-section-header">
+        <span class="section-title" style="font-size:14px">Tu oferta (${visitorOffers.length}/${required})</span>
+        <button class="view-all" onclick="clearOffers()" style="color:var(--error)">Limpiar</button>
+      </div>
+      <div class="sticker-tags" style="margin-bottom: var(--spacing-md)">
+        ${visitorOffers.map(code => `
+          <span class="sticker-tag repeat-tag">
+            ${code}
+            <button class="tag-remove" onclick="removeOffer('${code}')">×</button>
+          </span>
+        `).join('')}
+      </div>
+    ` : ''}
+
+    ${remaining > 0 && visitorOffers.length > 0 ? `
+      <p class="trade-form-hint" style="color:var(--error)">Faltan ${remaining} figurita${remaining !== 1 ? 's' : ''} más para completar el intercambio.</p>
+    ` : ''}
+
+    ${remaining <= 0 ? `
+      <button class="btn-primary btn-full btn-whatsapp" onclick="sendWhatsApp()">
+        <span class="material-symbols-outlined" style="font-size:18px">chat</span>
+        Enviar propuesta por WhatsApp
+      </button>
+    ` : ''}
+
+    <button class="btn-secondary btn-full" onclick="goToStep1()" style="margin-top: var(--spacing-sm)">
+      <span class="material-symbols-outlined" style="font-size:18px">arrow_back</span>
+      Volver
+    </button>
+
+    <div class="trade-my-missing-ref">
+      <div class="trade-result-header" style="margin-top: var(--spacing-lg)">
+        <span class="material-symbols-outlined">help</span>
+        <span>Estas me faltan (${state.missing.length})</span>
+      </div>
+      <div class="sticker-groups compact">
+        ${(() => {
+          const missingByPrefix = getMissingByPrefix();
+          return Object.keys(missingByPrefix).sort().map(prefix => {
+            const info = ALBUM[prefix];
+            const numbers = missingByPrefix[prefix].map(c => parseInt(c.split(' ')[1])).sort((a, b) => a - b);
+            return '<div class="sticker-group-inline"><span class="inline-prefix">' + info.flag + ' ' + prefix + ':</span><span class="inline-numbers">' + numbers.join(', ') + '</span></div>';
+          }).join('');
+        })()}
+      </div>
+    </div>
+  `;
+}
+
+// PASO 3: Confirmación
+function renderTradeStep3(container) {
+  const matches = visitorNeeds.filter(code => state.repeats[code]);
+
+  container.innerHTML = `
+    <div class="trade-step-indicator">
+      <span class="step-dot done"></span>
+      <span class="step-line done"></span>
+      <span class="step-dot done"></span>
+      <span class="step-line done"></span>
+      <span class="step-dot active"></span>
+    </div>
+
+    <div class="trade-result-section available">
+      <div class="trade-result-header">
+        <span class="material-symbols-outlined">check_circle</span>
+        <span>¡Propuesta enviada!</span>
+      </div>
+      <p class="section-subtitle">Se abrió WhatsApp con el resumen del intercambio. ¡Esperá mi respuesta!</p>
+    </div>
+
+    <div class="trade-summary-final">
+      <div class="trade-summary-col">
+        <span class="trade-summary-label">Yo te doy:</span>
+        <div class="sticker-tags">
+          ${matches.map(code => `<span class="sticker-tag match-tag">${code}</span>`).join('')}
+        </div>
+      </div>
+      <div class="trade-summary-col">
+        <span class="trade-summary-label">Vos me das:</span>
+        <div class="sticker-tags">
+          ${visitorOffers.map(code => `<span class="sticker-tag repeat-tag">${code}</span>`).join('')}
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-secondary btn-full" onclick="renderTrade()" style="margin-top: var(--spacing-lg)">
+      <span class="material-symbols-outlined" style="font-size:18px">refresh</span>
+      Nuevo intercambio
+    </button>
+  `;
+}
+
+// TRADE HANDLERS
 function handleAddTradeSearch() {
   const prefixInput = document.getElementById('trade-prefix');
   const numbersInput = document.getElementById('trade-numbers');
   const feedback = document.getElementById('trade-feedback');
 
   const { code, error: prefixError } = validatePrefix(prefixInput.value);
-  if (prefixError) {
-    showFeedback(feedback, prefixError, 'error');
-    return;
-  }
+  if (prefixError) { showFeedback(feedback, prefixError, 'error'); return; }
 
   const { numbers, error: parseError } = parseNumbers(numbersInput.value);
-  if (parseError) {
-    showFeedback(feedback, parseError, 'error');
-    return;
-  }
-  if (numbers.length === 0) {
-    showFeedback(feedback, 'Ingresa al menos un número', 'error');
-    return;
-  }
+  if (parseError) { showFeedback(feedback, parseError, 'error'); return; }
+  if (numbers.length === 0) { showFeedback(feedback, 'Ingresa al menos un número', 'error'); return; }
 
   const { error: rangeError } = validateNumbers(numbers, code);
-  if (rangeError) {
-    showFeedback(feedback, rangeError, 'error');
-    return;
-  }
+  if (rangeError) { showFeedback(feedback, rangeError, 'error'); return; }
 
   const codes = buildStickerCodes(code, numbers);
   for (const c of codes) {
     if (!visitorNeeds.includes(c)) visitorNeeds.push(c);
   }
 
-  showFeedback(feedback, `${codes.length} figurita${codes.length !== 1 ? 's' : ''} agregada${codes.length !== 1 ? 's' : ''} a la búsqueda`, 'success');
+  showFeedback(feedback, `${codes.length} figurita${codes.length !== 1 ? 's' : ''} agregada${codes.length !== 1 ? 's' : ''}`, 'success');
   numbersInput.value = '';
   prefixInput.value = '';
+  renderTradeStep();
+}
 
-  renderTradeResults();
+function handleAddOffer() {
+  const prefixInput = document.getElementById('offer-prefix');
+  const numbersInput = document.getElementById('offer-numbers');
+  const feedback = document.getElementById('offer-feedback');
+
+  const { code, error: prefixError } = validatePrefix(prefixInput.value);
+  if (prefixError) { showFeedback(feedback, prefixError, 'error'); return; }
+
+  const { numbers, error: parseError } = parseNumbers(numbersInput.value);
+  if (parseError) { showFeedback(feedback, parseError, 'error'); return; }
+  if (numbers.length === 0) { showFeedback(feedback, 'Ingresa al menos un número', 'error'); return; }
+
+  const { error: rangeError } = validateNumbers(numbers, code);
+  if (rangeError) { showFeedback(feedback, rangeError, 'error'); return; }
+
+  const codes = buildStickerCodes(code, numbers);
+  const matches = visitorNeeds.filter(c => state.repeats[c]);
+  const maxAllowed = matches.length;
+
+  const validOffers = [];
+  for (const c of codes) {
+    if (!state.missing.includes(c)) {
+      showFeedback(feedback, `${c} no está en mi lista de faltantes. Solo podés ofrecer figuritas que me falten.`, 'error');
+      return;
+    }
+    if (!visitorOffers.includes(c)) {
+      validOffers.push(c);
+    }
+  }
+
+  const spaceLeft = maxAllowed - visitorOffers.length;
+  const toAdd = validOffers.slice(0, spaceLeft);
+
+  if (toAdd.length === 0 && validOffers.length > 0) {
+    showFeedback(feedback, 'Ya completaste la cantidad necesaria para el intercambio.', 'error');
+    return;
+  }
+
+  visitorOffers.push(...toAdd);
+  showFeedback(feedback, `${toAdd.length} figurita${toAdd.length !== 1 ? 's' : ''} agregada${toAdd.length !== 1 ? 's' : ''} a tu oferta`, 'success');
+  numbersInput.value = '';
+  prefixInput.value = '';
+  renderTradeStep();
 }
 
 function removeVisitorNeed(code) {
   visitorNeeds = visitorNeeds.filter(c => c !== code);
-  renderTradeResults();
+  renderTradeStep();
 }
 
 function clearVisitorNeeds() {
   visitorNeeds = [];
-  renderTradeResults();
+  visitorOffers = [];
+  renderTradeStep();
 }
 
-function renderTradeResults() {
-  const listContainer = document.getElementById('trade-visitor-list');
-  const resultsContainer = document.getElementById('trade-results');
+function removeOffer(code) {
+  visitorOffers = visitorOffers.filter(c => c !== code);
+  renderTradeStep();
+}
 
-  if (visitorNeeds.length === 0) {
-    listContainer.innerHTML = '';
-    resultsContainer.style.display = 'none';
-    return;
-  }
+function clearOffers() {
+  visitorOffers = [];
+  renderTradeStep();
+}
 
+function goToStep2() {
+  tradeStep = 2;
+  renderTradeStep();
+}
+
+function goToStep1() {
+  tradeStep = 1;
+  visitorOffers = [];
+  renderTradeStep();
+}
+
+function sendWhatsApp() {
   const matches = visitorNeeds.filter(code => state.repeats[code]);
-  const noMatch = visitorNeeds.filter(code => !state.repeats[code]);
+  const phone = '51968447238';
 
-  const needsByPrefix = {};
-  for (const code of visitorNeeds) {
-    const [prefix] = code.split(' ');
-    if (!needsByPrefix[prefix]) needsByPrefix[prefix] = [];
-    needsByPrefix[prefix].push(code);
-  }
+  let msg = '🏆 *Propuesta de Intercambio - WC2026*\n\n';
+  msg += '📥 *Figuritas que necesito (me las das vos):*\n';
+  msg += matches.join(', ') + '\n\n';
+  msg += '📤 *Figuritas que te ofrezco a cambio:*\n';
+  msg += visitorOffers.join(', ') + '\n\n';
+  msg += `🔄 Total: ${matches.length} x ${visitorOffers.length} (intercambio 1:1)`;
 
-  listContainer.innerHTML = `
-    <div class="trade-section-header">
-      <span class="section-title" style="font-size:15px">Buscando (${visitorNeeds.length})</span>
-      <button class="view-all" onclick="clearVisitorNeeds()" style="color:var(--error)">Limpiar</button>
-    </div>
-    <div class="sticker-tags" style="margin-bottom: var(--spacing-lg)">
-      ${visitorNeeds.map(code => `
-        <span class="sticker-tag visitor-tag">
-          ${code}
-          <button class="tag-remove" onclick="removeVisitorNeed('${code}')">×</button>
-        </span>
-      `).join('')}
-    </div>
-  `;
+  const url = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
 
-  resultsContainer.style.display = 'block';
-
-  const matchesHtml = matches.length > 0 ? `
-    <div class="trade-result-section available">
-      <div class="trade-result-header">
-        <span class="material-symbols-outlined">check_circle</span>
-        <span>Tengo disponibles para vos (${matches.length})</span>
-      </div>
-      <div class="sticker-tags">
-        ${matches.map(code => `
-          <span class="sticker-tag match-tag">
-            ${code}
-            <span class="tag-count">x${state.repeats[code]}</span>
-          </span>
-        `).join('')}
-      </div>
-    </div>
-  ` : `
-    <div class="trade-result-section no-match">
-      <div class="trade-result-header">
-        <span class="material-symbols-outlined">cancel</span>
-        <span>No tengo ninguna de las que buscás</span>
-      </div>
-    </div>
-  `;
-
-  const missingByPrefix = getMissingByPrefix();
-  const myMissingPrefixes = Object.keys(missingByPrefix).sort();
-  const myMissingHtml = state.missing.length > 0 ? `
-    <div class="trade-result-section my-needs">
-      <div class="trade-result-header">
-        <span class="material-symbols-outlined">help</span>
-        <span>Estas me faltan a mí (${state.missing.length})</span>
-      </div>
-      <p class="section-subtitle">Revisá si tenés alguna de estas para ofrecerme a cambio:</p>
-      <div class="sticker-groups compact">
-        ${myMissingPrefixes.map(prefix => {
-          const info = ALBUM[prefix];
-          const codes = missingByPrefix[prefix];
-          const numbers = codes.map(c => parseInt(c.split(' ')[1])).sort((a, b) => a - b);
-          return `
-            <div class="sticker-group-inline">
-              <span class="inline-prefix">${info.flag} ${prefix}:</span>
-              <span class="inline-numbers">${numbers.join(', ')}</span>
-            </div>
-          `;
-        }).join('')}
-      </div>
-    </div>
-  ` : `
-    <div class="trade-result-section">
-      <div class="trade-result-header">
-        <span class="material-symbols-outlined">emoji_events</span>
-        <span>¡No me falta ninguna figurita!</span>
-      </div>
-    </div>
-  `;
-
-  document.getElementById('trade-matches').innerHTML = matchesHtml;
-  document.getElementById('trade-my-missing').innerHTML = myMissingHtml;
+  tradeStep = 3;
+  renderTradeStep();
 }
 
 // ===== UTILITIES =====
