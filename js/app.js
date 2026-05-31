@@ -54,6 +54,37 @@ const ALBUM = {
 
 const TOTAL_ALBUM = 980;
 
+// ===== AUTH =====
+const ADMIN_HASH = '5f4d8c3a9b2e1f7a6d0c4b8e3f2a1d5c';
+let isAdmin = false;
+
+function hashPin(pin) {
+  let hash = 0;
+  for (let i = 0; i < pin.length; i++) {
+    const char = pin.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return Math.abs(hash).toString(16);
+}
+
+function checkAdmin() {
+  if (isAdmin) return true;
+  const pin = prompt('Ingresá tu contraseña de administrador:');
+  if (!pin) return false;
+  if (pin === '_f1f4wc2026!') {
+    isAdmin = true;
+    sessionStorage.setItem('wc2026_admin', '1');
+    return true;
+  }
+  alert('Contraseña incorrecta');
+  return false;
+}
+
+function restoreSession() {
+  isAdmin = sessionStorage.getItem('wc2026_admin') === '1';
+}
+
 // ===== STATE =====
 let state = {
   missing: [],
@@ -224,6 +255,10 @@ function getRepeatsByPrefix() {
 
 // ===== NAVIGATION =====
 function navigate(page) {
+  if ((page === 'missing' || page === 'repeats') && !checkAdmin()) {
+    return;
+  }
+
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById(`page-${page}`).classList.add('active');
@@ -814,6 +849,7 @@ function showFeedback(el, message, type) {
 
 // ===== INIT =====
 async function init() {
+  restoreSession();
   await load();
   renderDashboard();
 }
