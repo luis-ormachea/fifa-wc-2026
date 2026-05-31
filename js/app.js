@@ -71,7 +71,7 @@ function hashPin(pin) {
 
 function checkAdmin() {
   if (isAdmin) return true;
-  const pin = prompt('Ingresá tu contraseña de administrador:');
+  const pin = prompt('Ingresa tu contraseña de administrador:');
   if (!pin) return false;
   if (pin === '_f1f4wc2026!') {
     isAdmin = true;
@@ -669,7 +669,7 @@ async function renderTrade() {
     <div class="trade-hero">
       <span class="material-symbols-outlined trade-hero-icon">swap_horiz</span>
       <h2 class="trade-hero-title">¿Intercambiamos?</h2>
-      <p class="trade-hero-desc">Ingresá las figuritas que te faltan y te muestro cuáles de esas tengo para darte.</p>
+      <p class="trade-hero-desc">Ingresa las figuritas que te faltan y te muestro cuáles de esas tengo para darte.</p>
       ${totalRepeats > 0 ? `<span class="trade-hero-badge">${totalRepeats} figuritas disponibles</span>` : ''}
     </div>
 
@@ -727,7 +727,7 @@ function renderTradeStep1(container) {
         <span class="material-symbols-outlined" style="font-size:18px">add</span>
         Agregar
       </button>
-      <p class="trade-form-hint">Podés agregar varios países, uno a la vez.</p>
+      <p class="trade-form-hint">Puedes agregar varios países, uno a la vez.</p>
       <div id="trade-feedback" class="feedback"></div>
     </div>
 
@@ -749,7 +749,7 @@ function renderTradeStep1(container) {
         <div class="trade-result-section available">
           <div class="trade-result-header">
             <span class="material-symbols-outlined">check_circle</span>
-            <span>¡Tengo ${matches.length} que necesitás!</span>
+            <span>¡Tengo ${matches.length} que necesitas!</span>
           </div>
           <div class="sticker-tags">
             ${matches.map(code => `
@@ -765,7 +765,7 @@ function renderTradeStep1(container) {
         <div class="trade-result-section no-match">
           <div class="trade-result-header">
             <span class="material-symbols-outlined">cancel</span>
-            <span>No tengo ninguna de las que buscás</span>
+            <span>No tengo ninguna de las que buscas</span>
           </div>
         </div>
       `}
@@ -801,7 +801,7 @@ function renderTradeStep2(container) {
     <div class="input-form trade-form-highlight">
       <div class="trade-form-label">
         <span class="material-symbols-outlined">handshake</span>
-        <span>Paso 2: ¿Qué me ofrecés a cambio?</span>
+        <span>Paso 2: ¿Qué me ofreces a cambio?</span>
       </div>
       <p class="section-subtitle">El intercambio es 1:1. Necesito que me ofrezcas <strong>${required}</strong> figurita${required !== 1 ? 's' : ''} de las que me faltan.</p>
       <div class="form-row">
@@ -810,7 +810,7 @@ function renderTradeStep2(container) {
           <input type="text" id="offer-prefix" placeholder="ARG" maxlength="3" autocomplete="off" list="prefix-list-t">
         </div>
         <div class="form-field numbers-field">
-          <label>Números que me ofrecés</label>
+          <label>Números que me ofreces</label>
           <input type="text" id="offer-numbers" placeholder="2,8,14" autocomplete="off">
         </div>
       </div>
@@ -889,7 +889,7 @@ function renderTradeStep3(container) {
         <span class="material-symbols-outlined">check_circle</span>
         <span>¡Propuesta enviada!</span>
       </div>
-      <p class="section-subtitle">Se abrió WhatsApp con el resumen del intercambio. ¡Esperá mi respuesta!</p>
+      <p class="section-subtitle">Se abrió WhatsApp con el resumen del intercambio. ¡Espera mi respuesta!</p>
     </div>
 
     <div class="trade-summary-final">
@@ -900,7 +900,7 @@ function renderTradeStep3(container) {
         </div>
       </div>
       <div class="trade-summary-col">
-        <span class="trade-summary-label">Vos me das:</span>
+        <span class="trade-summary-label">Tú me das:</span>
         <div class="sticker-tags">
           ${visitorOffers.map(code => `<span class="sticker-tag repeat-tag">${code}</span>`).join('')}
         </div>
@@ -963,7 +963,7 @@ function handleAddOffer() {
   const validOffers = [];
   for (const c of codes) {
     if (!state.missing.includes(c)) {
-      showFeedback(feedback, `${c} no está en mi lista de faltantes. Solo podés ofrecer figuritas que me falten.`, 'error');
+      showFeedback(feedback, `${c} no está en mi lista de faltantes. Solo puedes ofrecer figuritas que me falten.`, 'error');
       return;
     }
     if (!visitorOffers.includes(c)) {
@@ -1023,7 +1023,7 @@ function sendWhatsApp() {
   const phone = '51968447238';
 
   let msg = '🏆 *Propuesta de Intercambio - WC2026*\n\n';
-  msg += '📥 *Figuritas que necesito (me las das vos):*\n';
+  msg += '📥 *Figuritas que necesito (me las das tú):*\n';
   msg += matches.join(', ') + '\n\n';
   msg += '📤 *Figuritas que te ofrezco a cambio:*\n';
   msg += visitorOffers.join(', ') + '\n\n';
