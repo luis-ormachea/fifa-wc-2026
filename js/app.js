@@ -653,15 +653,21 @@ function renderTrade() {
   const totalRepeats = Object.values(state.repeats).reduce((s, v) => s + v, 0);
 
   document.getElementById('page-trade').innerHTML = `
-    <div class="section-header">
-      <span class="section-title">Intercambio</span>
+    <div class="trade-hero">
+      <span class="material-symbols-outlined trade-hero-icon">swap_horiz</span>
+      <h2 class="trade-hero-title">¿Intercambiamos?</h2>
+      <p class="trade-hero-desc">Ingresá las figuritas que te faltan y te muestro cuáles de esas tengo para darte.</p>
+      ${totalRepeats > 0 ? `<span class="trade-hero-badge">${totalRepeats} figuritas disponibles</span>` : ''}
     </div>
-    <p class="section-subtitle">Ingresá las figuritas que te faltan para ver cuáles tengo disponibles para darte.</p>
 
-    <div class="input-form">
+    <div class="input-form trade-form-highlight">
+      <div class="trade-form-label">
+        <span class="material-symbols-outlined">edit_note</span>
+        <span>Escribí las figuritas que necesitás</span>
+      </div>
       <div class="form-row">
         <div class="form-field prefix-field">
-          <label>País / Sección</label>
+          <label>País</label>
           <input type="text" id="trade-prefix" placeholder="MEX" maxlength="3" autocomplete="off" list="prefix-list-t">
         </div>
         <div class="form-field numbers-field">
@@ -670,9 +676,10 @@ function renderTrade() {
         </div>
       </div>
       <button class="btn-primary btn-full" onclick="handleAddTradeSearch()">
-        <span class="material-symbols-outlined" style="font-size:18px">add</span>
-        Agregar a Búsqueda
+        <span class="material-symbols-outlined" style="font-size:18px">search</span>
+        Buscar Coincidencias
       </button>
+      <p class="trade-form-hint">Podés agregar varios países, uno a la vez.</p>
       <div id="trade-feedback" class="feedback"></div>
     </div>
 
